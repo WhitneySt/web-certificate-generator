@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Generador de Certificados{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        {% if category == 'script' %}
+                            {{ message|safe }}
+                        {% else %}
+                            <div class="flash-message {{ category }}">
+                                {{ message }}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const submitButton = document.querySelector('.submit-button');
+            let loadingDiv = document.querySelector('.loading-status');
+            
+            // Crear el div de estado si no existe
+            if (!loadingDiv) {
+                loadingDiv = document.createElement('div');
+                loadingDiv.className = 'loading-status';
+                if (submitButton) {
+                    submitButton.parentNode.insertBefore(loadingDiv, submitButton.nextSibling);
+                }
+            }
+            
+            if (form && submitButton) {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault(); // Prevenir el envío normal del formulario
+                    
+                    // Mostrar estado de procesamiento
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Procesando...';
+                    loadingDiv.innerHTML = `
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">Generando certificados...</p>
+                    `;
+                    loadingDiv.style.display = 'flex';
+
+                    try {
+                        // Crear FormData con los archivos
+                        const formData = new FormData(form);
+                        
+                        // Hacer la petición AJAX
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (response.ok) {
+                            // Obtener el blob de la respuesta
+                            const blob = await response.blob();
+                            
+                            // Crear URL del blob
+                            const url = window.URL.createObjectURL(blob);
+                            
+                            // Crear enlace temporal y simular clic
+                            const a = document.createElement('a');
+                            a.style.display = 'none';
+                            a.href = url;
+                            a.download = response.headers.get('content-disposition')?.split('filename=')[1]?.replace(/['"]/g, '') || 'certificados.zip';
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+
+                            // Mostrar mensaje de éxito
+                            loadingDiv.innerHTML = '<p class="status-message success">¡Certificados generados y descargados con éxito!</p>';
+                            
+                            // Resetear el formulario
+                            form.reset();
+                        } else {
+                            throw new Error('Error al generar los certificados');
+                        }
+                    } catch (error) {
+                        loadingDiv.innerHTML = `<p class="status-message error">Error: ${error.message}</p>`;
+                    } finally {
+                        // Restaurar el botón
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Generar Certificados';
+                        
+                        // Ocultar el mensaje después de 5 segundos
+                        setTimeout(() => {
+                            loadingDiv.style.display = 'none';
+                        }, 5000);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
