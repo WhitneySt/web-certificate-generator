@@ -1,20 +1,13 @@
 import os
-from pathlib import Path
 
 class Config:
-    # Base directory of the application
-    BASE_DIR = Path(__file__).resolve().parent.parent
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'tu-clave-secreta'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///instance/app.db'
+    UPLOAD_FOLDER = os.path.join('uploads')
+    TEMP_FOLDER = os.path.join('temp')
     
-    # Flask configuration
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key'
-    
-    # File upload configuration
-    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
-    TEMP_FOLDER = os.path.join(BASE_DIR, 'temp')
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
-    
-    # Allowed file extensions
-    ALLOWED_EXTENSIONS = {
-        'excel': {'xlsx', 'xls'},
-        'image': {'png', 'jpg', 'jpeg'}
-    }
+    # Asegúrate de que las carpetas existan
+    @staticmethod
+    def init_app(app):
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        os.makedirs(app.config['TEMP_FOLDER'], exist_ok=True)
