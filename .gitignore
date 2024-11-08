@@ -3,9 +3,7 @@ __pycache__/
 *.pyc
 instance/
 uploads/*
-!uploads/.gitkeep
 temp/*
-!temp/.gitkeep
 *.log
 *.xlsx
 *.png
