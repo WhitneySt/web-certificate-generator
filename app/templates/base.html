@@ -1,32 +1,27 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}Generador de Certificados{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body>
     <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        {% if category == 'script' %}
-                            {{ message|safe }}
-                        {% else %}
-                            <div class="flash-message {{ category }}">
-                                {{ message }}
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-
-        {% block content %}{% endblock %}
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %}
+      <div class="flash-messages">
+        {% for category, message in messages %} {% if category == 'script' %} {{
+        message|safe }} {% else %}
+        <div class="flash-message {{ category }}">{{ message }}</div>
+        {% endif %} {% endfor %}
+      </div>
+      {% endif %} {% endwith %} {% block content %}{% endblock %}
     </div>
-    <script>
+    <!--<script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.querySelector('form');
             const submitButton = document.querySelector('.submit-button');
@@ -104,11 +99,110 @@
                 });
             }
         });
+    </script>-->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const form = document.querySelector("form");
+        const submitButton = document.querySelector(".submit-button");
+        let progressDiv = document.querySelector(".progress-container");
+
+        // Crear el contenedor de progreso si no existe
+        if (!progressDiv) {
+          progressDiv = document.createElement("div");
+          progressDiv.className = "progress-container";
+          progressDiv.innerHTML = `
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <p class="progress-text">Preparando generación de certificados...</p>
+            `;
+          if (submitButton) {
+            submitButton.parentNode.insertBefore(
+              progressDiv,
+              submitButton.nextSibling
+            );
+          }
+        }
+
+        if (form && submitButton) {
+          form.addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            // Mostrar barra de progreso
+            submitButton.disabled = true;
+            submitButton.textContent = "Procesando...";
+            progressDiv.style.display = "flex";
+            const progressFill = progressDiv.querySelector(".progress-fill");
+            const progressText = progressDiv.querySelector(".progress-text");
+
+            try {
+              const formData = new FormData(form);
+
+              // Iniciar el monitoreo del progreso
+              let progressInterval = setInterval(async () => {
+                try {
+                  const progressResponse = await fetch("/progress");
+                  const progressData = await progressResponse.json();
+                  const progress = progressData.progress;
+
+                  progressFill.style.width = `${progress}%`;
+                  progressText.textContent = `Generando certificados: ${progress}%`;
+
+                  if (progress >= 100) {
+                    clearInterval(progressInterval);
+                  }
+                } catch (error) {
+                  console.error("Error al obtener progreso:", error);
+                }
+              }, 500);
+
+              // Hacer la petición AJAX para generar certificados
+              const response = await fetch(form.action, {
+                method: "POST",
+                body: formData,
+              });
+
+              if (response.ok) {
+                clearInterval(progressInterval);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+
+                const a = document.createElement("a");
+                a.style.display = "none";
+                a.href = url;
+                a.download =
+                  response.headers
+                    .get("content-disposition")
+                    ?.split("filename=")[1]
+                    ?.replace(/['"]/g, "") || "certificados.zip";
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                progressText.textContent =
+                  "¡Certificados generados y descargados con éxito!";
+                progressFill.style.width = "100%";
+                form.reset();
+              } else {
+                throw new Error("Error al generar los certificados");
+              }
+            } catch (error) {
+              progressText.textContent = `Error: ${error.message}`;
+              progressFill.style.backgroundColor = "var(--error-color)";
+            } finally {
+              submitButton.disabled = false;
+              submitButton.textContent = "Generar Certificados";
+
+              setTimeout(() => {
+                progressDiv.style.display = "none";
+                progressFill.style.width = "0%";
+                progressFill.style.backgroundColor = "var(--primary-color)";
+              }, 5000);
+            }
+          });
+        }
+      });
     </script>
-</body>
+  </body>
 </html>
-
-
-
-
-

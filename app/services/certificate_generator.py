@@ -6,11 +6,17 @@ from reportlab.pdfgen import canvas
 import logging
 
 class CertificateGenerator:
-    def __init__(self, excel_path, template_path, output_folder, font_folder='fonts'):
+    def __init__(self, excel_path, template_path, output_folder, font_folder='fonts', progress_callback=None):
         self.excel_path = excel_path
         self.template_path = template_path
         self.output_folder = output_folder
         self.font_folder = font_folder
+        self.progress_callback = progress_callback    
+    # def __init__(self, excel_path, template_path, output_folder, font_folder='fonts'):
+    #     self.excel_path = excel_path
+    #     self.template_path = template_path
+    #     self.output_folder = output_folder
+    #     self.font_folder = font_folder
         
         # Configure styles
         self.styles = {
@@ -129,6 +135,12 @@ class CertificateGenerator:
                         id_number=str(row['identificacion'])
                     )
                     generated += 1
+                    
+                    # Calcular y reportar el progreso
+                    if self.progress_callback:
+                        progress = int((generated / total) * 100)
+                        self.progress_callback(progress)
+                        
                 except Exception as e:
                     logging.error(f'Error with certificate: {e}')
             
@@ -137,3 +149,26 @@ class CertificateGenerator:
         except Exception as e:
             logging.error(f'Error in batch generation: {e}')
             raise
+    # def generate_all(self):
+    #     try:
+    #         df = pd.read_excel(self.excel_path)
+    #         total = len(df)
+    #         generated = 0
+            
+    #         logging.info(f'Starting generation of {total} certificates')
+            
+    #         for _, row in df.iterrows():
+    #             try:
+    #                 self.generate_certificate(
+    #                     name=row['nombre_completo'],
+    #                     id_number=str(row['identificacion'])
+    #                 )
+    #                 generated += 1
+    #             except Exception as e:
+    #                 logging.error(f'Error with certificate: {e}')
+            
+    #         logging.info(f'Generated {generated} out of {total} certificates')
+            
+    #     except Exception as e:
+    #         logging.error(f'Error in batch generation: {e}')
+    #         raise
